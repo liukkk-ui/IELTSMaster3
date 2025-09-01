@@ -12,38 +12,7 @@ export function QuickActions() {
   const errorCount = errorWords?.length || 0;
 
   return (
-    <aside className="space-y-6">
-      {/* Quick Practice */}
-      <div className="bg-card rounded-xl border border-border p-6">
-        <h3 className="text-lg font-semibold text-foreground mb-4">Quick Practice</h3>
-        <div className="space-y-3">
-          <Link href="/practice">
-            <Button className="w-full justify-start" data-testid="button-random-practice">
-              <Play className="mr-2 h-4 w-4" />
-              Random 20 Words
-            </Button>
-          </Link>
-          <Link href="/review">
-            <Button 
-              variant="outline" 
-              className="w-full justify-start bg-warning/10 border-warning text-warning hover:bg-warning hover:text-white"
-              data-testid="button-review-errors"
-            >
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Review Errors ({errorCount})
-            </Button>
-          </Link>
-          <Button 
-            variant="outline" 
-            className="w-full justify-start bg-accent/10 border-accent text-accent hover:bg-accent hover:text-white"
-            data-testid="button-practice-favorites"
-          >
-            <Star className="mr-2 h-4 w-4" />
-            Favorite Words
-          </Button>
-        </div>
-      </div>
-
+    <aside>
       {/* Recent Activity */}
       <div className="bg-card rounded-xl border border-border p-6">
         <h3 className="text-lg font-semibold text-foreground mb-4">Recent Activity</h3>
