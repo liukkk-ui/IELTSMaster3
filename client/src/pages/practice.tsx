@@ -2,11 +2,13 @@ import { useQuery } from "@tanstack/react-query";
 import { useRoute } from "wouter";
 import { useState, useEffect } from "react";
 import { PracticeInterface } from "@/components/practice-interface";
-import type { Word } from "@shared/schema";
+import type { Word, ErrorWord } from "@shared/schema";
 
 export default function Practice() {
   const [, params] = useRoute("/practice/:unitId");
+  const [, reviewParams] = useRoute("/practice/review");
   const unitId = params?.unitId;
+  const isReviewMode = !!reviewParams;
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [sessionStats, setSessionStats] = useState({
     correct: 0,
@@ -14,11 +16,16 @@ export default function Practice() {
     total: 0
   });
 
-  // Fetch words based on whether we have a unitId or doing random practice
+  // Fetch words based on mode - review, specific unit, or random practice
   const { data: words, isLoading } = useQuery<Word[]>({
-    queryKey: unitId ? ["/api/units", unitId, "words"] : ["/api/words/random"],
+    queryKey: isReviewMode ? ["/api/error-words"] : unitId ? ["/api/units", unitId, "words"] : ["/api/words/random"],
     queryFn: async ({ queryKey }) => {
-      if (unitId) {
+      if (isReviewMode) {
+        const response = await fetch('/api/error-words');
+        if (!response.ok) throw new Error('Failed to fetch error words');
+        const errorWords: (ErrorWord & { word: Word })[] = await response.json();
+        return errorWords.map(errorWord => errorWord.word); // Extract just the word data
+      } else if (unitId) {
         const response = await fetch(`/api/units/${unitId}/words`);
         if (!response.ok) throw new Error('Failed to fetch unit words');
         return response.json();
@@ -70,8 +77,15 @@ export default function Practice() {
     return (
       <main className="max-w-4xl mx-auto px-6 py-8">
         <div className="bg-card rounded-xl border border-border p-8 text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-2">No Words Available</h2>
-          <p className="text-muted-foreground">No words found for practice.</p>
+          <h2 className="text-2xl font-bold text-foreground mb-2">
+            {isReviewMode ? "No Error Words to Review" : "No Words Available"}
+          </h2>
+          <p className="text-muted-foreground">
+            {isReviewMode 
+              ? "Great job! You don't have any words that need review right now." 
+              : "No words found for practice."
+            }
+          </p>
         </div>
       </main>
     );
@@ -88,6 +102,7 @@ export default function Practice() {
         onStatsUpdate={updateSessionStats}
         sessionStats={sessionStats}
         unitId={unitId}
+        isReviewMode={isReviewMode}
       />
     </main>
   );

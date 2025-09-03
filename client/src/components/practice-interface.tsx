@@ -20,6 +20,7 @@ interface PracticeInterfaceProps {
     total: number;
   };
   unitId?: string;
+  isReviewMode?: boolean;
 }
 
 export function PracticeInterface({
@@ -30,7 +31,8 @@ export function PracticeInterface({
   onPrevious,
   onStatsUpdate,
   sessionStats,
-  unitId
+  unitId,
+  isReviewMode = false
 }: PracticeInterfaceProps) {
   const [userInput, setUserInput] = useState("");
   const [feedback, setFeedback] = useState<{
@@ -274,8 +276,13 @@ export function PracticeInterface({
       <div className="flex items-center justify-between mb-8">
         <div>
           <h2 className="text-2xl font-bold text-foreground mb-2">
-            {unitId ? `Unit Practice` : "Random Practice"}
+            {isReviewMode ? "Error Review Practice" : unitId ? `Unit Practice` : "Random Practice"}
           </h2>
+          {isReviewMode && (
+            <p className="text-sm text-warning mb-1">
+              🔄 Practicing your previously incorrect words
+            </p>
+          )}
           <div className="flex items-center space-x-4 text-sm text-muted-foreground">
             <span data-testid="text-word-progress">Word {currentIndex + 1} of {totalWords}</span>
             <span data-testid="text-accuracy">Accuracy: {accuracy}%</span>

@@ -93,7 +93,7 @@ export function ErrorReview({ errorWords }: ErrorReviewProps) {
               Practice Selected ({selectedWords.size})
             </Button>
           )}
-          <Link href="/practice">
+          <Link href="/practice/review">
             <Button data-testid="button-start-review">
               <Play className="mr-2 h-4 w-4" />
               Start Review
