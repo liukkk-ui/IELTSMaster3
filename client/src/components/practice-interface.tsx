@@ -190,8 +190,23 @@ export function PracticeInterface({
     if ('speechSynthesis' in window) {
       speechSynthesis.cancel(); // Stop any current speech
       
-      // Clean the word text - ensure it's a string and handle compound words
-      const wordText = typeof word.word === 'string' ? word.word.trim() : String(word.word).trim();
+      // Debug the word object structure
+      console.log('Full word object:', word);
+      console.log('Word.word property:', word.word);
+      
+      // Handle different word structures - review mode vs normal mode  
+      let wordText;
+      const wordData = word as any; // Type assertion to handle dynamic structure
+      if (typeof wordData.word === 'string') {
+        wordText = wordData.word.trim();
+      } else if (wordData.word && typeof wordData.word.word === 'string') {
+        // Handle nested word structure from review mode
+        wordText = wordData.word.word.trim();
+      } else {
+        // Fallback to string conversion
+        wordText = String(wordData.word || wordData).trim();
+      }
+      
       console.log('Playing audio for word:', wordText); // Debug log
       
       const utterance = new SpeechSynthesisUtterance(wordText);
@@ -263,8 +278,17 @@ export function PracticeInterface({
     setShowHint(newShowHint);
     
     if (newShowHint && !dictData) {
-      // Ensure we pass a clean word string
-      const wordText = typeof word.word === 'string' ? word.word : String(word.word);
+      // Handle different word structures for hint fetching
+      let wordText;
+      const wordData = word as any; // Type assertion to handle dynamic structure
+      if (typeof wordData.word === 'string') {
+        wordText = wordData.word;
+      } else if (wordData.word && typeof wordData.word.word === 'string') {
+        // Handle nested word structure from review mode
+        wordText = wordData.word.word;
+      } else {
+        wordText = String(wordData.word || wordData);
+      }
       fetchDefinition(wordText);
     }
   };
