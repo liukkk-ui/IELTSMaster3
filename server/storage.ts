@@ -13,6 +13,12 @@ import {
   type InsertPracticeSettings
 } from "@shared/schema";
 import { randomUUID } from "crypto";
+import fs from "fs";
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export interface IStorage {
   // Units
@@ -58,98 +64,55 @@ export class MemStorage implements IStorage {
   }
 
   private initializeData() {
-    // Initialize Wang Lu IELTS Corpus units and words
-    const unitsData = [
-      { number: 1, title: "Academic Vocabulary", description: "Essential academic terms for IELTS", difficulty: "Beginner" },
-      { number: 2, title: "Travel & Transport", description: "Travel and transportation vocabulary", difficulty: "Beginner" },
-      { number: 3, title: "Science & Technology", description: "Scientific and technological terms", difficulty: "Intermediate" },
-      { number: 4, title: "Environment & Nature", description: "Environmental and nature-related vocabulary", difficulty: "Intermediate" },
-      { number: 5, title: "Business & Economy", description: "Business and economic terminology", difficulty: "Advanced" },
-    ];
-
-    const wordsData = [
-      // Unit 1: Academic Vocabulary
-      { unitNumber: 1, words: [
-        { word: "academic", phonetic: "/ˌækəˈdemɪk/", definition: "Relating to education and scholarship; theoretical rather than practical" },
-        { word: "analysis", phonetic: "/əˈnæləsɪs/", definition: "Detailed examination of the elements or structure of something" },
-        { word: "approach", phonetic: "/əˈproʊtʃ/", definition: "A way of dealing with something; a method or strategy" },
-        { word: "assessment", phonetic: "/əˈsesmənt/", definition: "The evaluation or estimation of the nature, quality, or ability of someone or something" },
-        { word: "concept", phonetic: "/ˈkɑːnsept/", definition: "An abstract idea; a general notion" },
-        { word: "criteria", phonetic: "/kraɪˈtɪriə/", definition: "A principle or standard by which something may be judged or decided" },
-        { word: "demonstrate", phonetic: "/ˈdemənstreɪt/", definition: "To clearly show the existence or truth of something by giving proof or evidence" },
-        { word: "evaluate", phonetic: "/ɪˈvæljueɪt/", definition: "To form an idea of the amount, number, or value of; assess" },
-        { word: "hypothesis", phonetic: "/haɪˈpɑːθəsɪs/", definition: "A supposition or proposed explanation made on the basis of limited evidence" },
-        { word: "methodology", phonetic: "/ˌmeθəˈdɑːlədʒi/", definition: "A system of methods used in a particular area of study or activity" }
-      ]},
-      // Unit 2: Travel & Transport
-      { unitNumber: 2, words: [
-        { word: "accommodation", phonetic: "/əˌkɑːməˈdeɪʃn/", definition: "A room, group of rooms, or building in which someone may live or stay" },
-        { word: "departure", phonetic: "/dɪˈpɑːrtʃər/", definition: "The action of leaving, typically to start a journey" },
-        { word: "destination", phonetic: "/ˌdestɪˈneɪʃn/", definition: "The place to which someone or something is going or being sent" },
-        { word: "itinerary", phonetic: "/aɪˈtɪnəreri/", definition: "A planned route or journey" },
-        { word: "passenger", phonetic: "/ˈpæsɪndʒər/", definition: "A traveler on a public or private conveyance other than the driver, pilot, or crew" },
-        { word: "reservation", phonetic: "/ˌrezərˈveɪʃn/", definition: "The action of reserving something; a booking" },
-        { word: "terminal", phonetic: "/ˈtɜːrmɪnl/", definition: "A building at an airport where passengers transfer between ground transportation and the facilities" },
-        { word: "transport", phonetic: "/ˈtrænspɔːrt/", definition: "Take or carry people or goods from one place to another by means of a vehicle, aircraft, or ship" },
-        { word: "voyage", phonetic: "/ˈvɔɪɪdʒ/", definition: "A long journey involving travel by sea or in space" },
-        { word: "luggage", phonetic: "/ˈlʌɡɪdʒ/", definition: "Suitcases or other bags in which to pack personal belongings for traveling" }
-      ]},
-      // Unit 3: Science & Technology
-      { unitNumber: 3, words: [
-        { word: "experiment", phonetic: "/ɪkˈsperɪmənt/", definition: "A scientific procedure undertaken to make a discovery, test a hypothesis, or demonstrate a known fact" },
-        { word: "innovation", phonetic: "/ˌɪnəˈveɪʃn/", definition: "The action or process of innovating; a new method, idea, product, etc." },
-        { word: "laboratory", phonetic: "/ˈlæbrətɔːri/", definition: "A room or building equipped for scientific experiments, research, or teaching" },
-        { word: "technology", phonetic: "/tekˈnɑːlədʒi/", definition: "The application of scientific knowledge for practical purposes" },
-        { word: "research", phonetic: "/rɪˈsɜːrtʃ/", definition: "The systematic investigation into and study of materials and sources" },
-        { word: "equipment", phonetic: "/ɪˈkwɪpmənt/", definition: "The necessary items for a particular purpose" },
-        { word: "procedure", phonetic: "/prəˈsiːdʒər/", definition: "An established or official way of doing something" },
-        { word: "observation", phonetic: "/ˌɑːbzərˈveɪʃn/", definition: "The action or process of observing something or someone carefully" },
-        { word: "discovery", phonetic: "/dɪˈskʌvəri/", definition: "The action or process of finding someone or something" },
-        { word: "development", phonetic: "/dɪˈveləpmənt/", definition: "The process of developing or being developed" }
-      ]}
-    ];
+    // Load Wang Lu IELTS Corpus data from JSON file
+    const dataPath = path.join(__dirname, 'ielts-vocabulary-data.json');
+    const rawData = fs.readFileSync(dataPath, 'utf8');
+    const vocabData = JSON.parse(rawData);
 
     // Create units and track their IDs
     const unitIdMap = new Map<number, string>();
     
-    unitsData.forEach(unitData => {
+    vocabData.units.forEach((unitData: any) => {
       const unitId = randomUUID();
       const unit: Unit = {
         id: unitId,
         number: unitData.number,
         title: unitData.title,
-        description: unitData.description,
+        description: unitData.description || null,
         difficulty: unitData.difficulty,
-        wordCount: 0
+        wordCount: unitData.wordCount
       };
       this.units.set(unitId, unit);
       unitIdMap.set(unitData.number, unitId);
     });
 
+    // Group words by unit number
+    const wordsByUnit = vocabData.words.reduce((acc: any, wordData: any) => {
+      if (!acc[wordData.unitNumber]) {
+        acc[wordData.unitNumber] = [];
+      }
+      acc[wordData.unitNumber].push(wordData);
+      return acc;
+    }, {});
+
     // Create words for each unit
-    wordsData.forEach(unitWords => {
-      const unitId = unitIdMap.get(unitWords.unitNumber);
+    Object.entries(wordsByUnit).forEach(([unitNumberStr, unitWords]: [string, any]) => {
+      const unitNumber = parseInt(unitNumberStr);
+      const unitId = unitIdMap.get(unitNumber);
       if (!unitId) return;
 
-      unitWords.words.forEach(wordData => {
+      unitWords.forEach((wordData: any) => {
         const wordId = randomUUID();
         const word: Word = {
           id: wordId,
           unitId,
           word: wordData.word,
-          phonetic: wordData.phonetic,
-          definition: wordData.definition,
+          phonetic: wordData.phonetic || null,
+          definition: wordData.definition || null,
           audioUrl: `/api/audio/${wordData.word}.mp3`
         };
         this.words.set(wordId, word);
       });
-
-      // Update unit word count
-      const unit = this.units.get(unitId);
-      if (unit) {
-        unit.wordCount = unitWords.words.length;
-        this.units.set(unitId, unit);
-      }
     });
   }
 
