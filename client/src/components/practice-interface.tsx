@@ -141,6 +141,13 @@ export function PracticeInterface({
         isCorrect: result.isCorrect,
         userId: "default_user"
       });
+
+      // If answer is correct, automatically move to next word after a short delay
+      if (result.isCorrect) {
+        setTimeout(() => {
+          handleNext(); // This will move to next word and play audio automatically
+        }, 1500); // 1.5 second delay to let user see the correct feedback
+      }
     },
     onError: () => {
       toast({
@@ -164,8 +171,6 @@ export function PracticeInterface({
     // Handle different word structures for spell check
     const wordData = word as any;
     const actualWordId = wordData.word?.id || wordData.wordId || wordData.id;
-    
-    console.log('Submitting spell check with wordId:', actualWordId); // Debug log
 
     spellCheckMutation.mutate({
       wordId: actualWordId,
@@ -179,6 +184,11 @@ export function PracticeInterface({
     setShowHint(false);
     setDictData(null);
     onNext();
+    
+    // Play audio for the new word after a short delay to ensure word has updated
+    setTimeout(() => {
+      playAudio();
+    }, 100);
   };
 
   const handlePrevious = () => {
@@ -200,10 +210,6 @@ export function PracticeInterface({
     if ('speechSynthesis' in window) {
       speechSynthesis.cancel(); // Stop any current speech
       
-      // Debug the word object structure
-      console.log('Full word object:', word);
-      console.log('Word.word property:', word.word);
-      
       // Handle different word structures - review mode vs normal mode  
       let wordText;
       const wordData = word as any; // Type assertion to handle dynamic structure
@@ -216,8 +222,6 @@ export function PracticeInterface({
         // Fallback to string conversion
         wordText = String(wordData.word || wordData).trim();
       }
-      
-      console.log('Playing audio for word:', wordText); // Debug log
       
       const utterance = new SpeechSynthesisUtterance(wordText);
       utterance.rate = voiceSettings.rate;
@@ -266,7 +270,6 @@ export function PracticeInterface({
     try {
       // Clean and ensure wordText is a proper string
       const cleanWordText = typeof wordText === 'string' ? wordText.trim() : String(wordText).trim();
-      console.log('Fetching definition for:', cleanWordText); // Debug log
       
       const response = await fetch(`/api/dictionary/${encodeURIComponent(cleanWordText)}`);
       if (response.ok) {
