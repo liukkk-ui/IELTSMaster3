@@ -463,10 +463,24 @@ export function PracticeInterface({
         </div>
 
         {/* Hint */}
-        {showHint && word.definition && (
+        {showHint && (
           <div className="bg-muted/30 rounded-lg p-4 mb-4">
             <p className="text-sm text-muted-foreground mb-1">Hint:</p>
-            <p className="text-foreground">{word.definition}</p>
+            {word.definition ? (
+              <p className="text-foreground">{word.definition}</p>
+            ) : (
+              <div className="space-y-2">
+                <p className="text-foreground">
+                  <span className="font-medium">Length:</span> {word.word.length} letters
+                </p>
+                <p className="text-foreground">
+                  <span className="font-medium">First letter:</span> {word.word.charAt(0).toUpperCase()}
+                </p>
+                <p className="text-foreground">
+                  <span className="font-medium">Pattern:</span> {word.word.split('').map((char, i) => i === 0 || i === word.word.length - 1 ? char : '_').join('')}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
