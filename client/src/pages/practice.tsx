@@ -39,6 +39,17 @@ export default function Practice() {
 
   const currentWord = words?.[currentWordIndex];
 
+  if (!currentWord) {
+    return (
+      <main className="max-w-4xl mx-auto px-6 py-8">
+        <div className="bg-card rounded-xl border border-border p-8 text-center">
+          <h2 className="text-2xl font-bold text-foreground mb-2">Loading...</h2>
+          <p className="text-muted-foreground">Preparing your practice session.</p>
+        </div>
+      </main>
+    );
+  }
+
   const handleNextWord = () => {
     if (words && currentWordIndex < words.length - 1) {
       setCurrentWordIndex(prev => prev + 1);
