@@ -40,8 +40,9 @@ export function ErrorReview({ errorWords }: ErrorReviewProps) {
     setSelectedWords(new Set());
   };
 
-  const formatTimeAgo = (date: Date) => {
+  const formatTimeAgo = (dateInput: Date | string) => {
     const now = new Date();
+    const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
     if (diffInHours < 1) return "Less than an hour ago";
