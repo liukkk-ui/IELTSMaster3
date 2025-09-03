@@ -195,6 +195,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Dictionary API endpoint  
+  app.get("/api/dictionary/:word", async (req, res) => {
+    try {
+      const { word } = req.params;
+      const response = await fetch(`https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(word)}`);
+      
+      if (!response.ok) {
+        return res.status(404).json({ error: 'Word not found in dictionary' });
+      }
+      
+      const data = await response.json();
+      
+      // Extract the first definition from the response
+      const firstEntry = data[0];
+      const firstMeaning = firstEntry?.meanings?.[0];
+      const firstDefinition = firstMeaning?.definitions?.[0];
+      
+      const result = {
+        word: firstEntry?.word || word,
+        phonetic: firstEntry?.phonetic || firstEntry?.phonetics?.[0]?.text || null,
+        partOfSpeech: firstMeaning?.partOfSpeech || null,
+        definition: firstDefinition?.definition || null,
+        example: firstDefinition?.example || null,
+        audio: firstEntry?.phonetics?.find(p => p.audio)?.audio || null
+      };
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Dictionary API error:', error);
+      res.status(500).json({ error: 'Failed to fetch word definition' });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

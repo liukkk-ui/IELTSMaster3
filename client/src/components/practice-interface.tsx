@@ -39,6 +39,15 @@ export function PracticeInterface({
     correctSpelling: string;
   } | null>(null);
   const [showHint, setShowHint] = useState(false);
+  const [dictData, setDictData] = useState<{
+    word: string;
+    phonetic: string | null;
+    partOfSpeech: string | null;
+    definition: string | null;
+    example: string | null;
+    audio: string | null;
+  } | null>(null);
+  const [loadingDict, setLoadingDict] = useState(false);
   const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
   const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
   const [voiceSettings, setVoiceSettings] = useState({
@@ -156,6 +165,7 @@ export function PracticeInterface({
     setUserInput("");
     setFeedback(null);
     setShowHint(false);
+    setDictData(null);
     onNext();
   };
 
@@ -163,6 +173,7 @@ export function PracticeInterface({
     setUserInput("");
     setFeedback(null);
     setShowHint(false);
+    setDictData(null);
     onPrevious();
   };
 
@@ -216,6 +227,33 @@ export function PracticeInterface({
     const voicesForAccent = getVoicesByAccent(accent);
     if (voicesForAccent.length > 0) {
       setSelectedVoice(voicesForAccent[0]);
+    }
+  };
+
+  const fetchDefinition = async (wordText: string) => {
+    setLoadingDict(true);
+    try {
+      const response = await fetch(`/api/dictionary/${encodeURIComponent(wordText)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setDictData(data);
+      } else {
+        setDictData(null);
+      }
+    } catch (error) {
+      console.error('Failed to fetch definition:', error);
+      setDictData(null);
+    } finally {
+      setLoadingDict(false);
+    }
+  };
+
+  const toggleHint = () => {
+    const newShowHint = !showHint;
+    setShowHint(newShowHint);
+    
+    if (newShowHint && !dictData) {
+      fetchDefinition(word.word);
     }
   };
 
@@ -443,11 +481,12 @@ export function PracticeInterface({
               </Button>
               <Button 
                 variant="outline" 
-                onClick={() => setShowHint(!showHint)}
+                onClick={toggleHint}
+                disabled={loadingDict}
                 data-testid="button-hint"
               >
                 <Lightbulb className="mr-2 h-4 w-4" />
-                Hint
+                {loadingDict ? 'Loading...' : 'Hint'}
               </Button>
             </>
           ) : (
@@ -465,20 +504,48 @@ export function PracticeInterface({
         {/* Hint */}
         {showHint && (
           <div className="bg-muted/30 rounded-lg p-4 mb-4">
-            <p className="text-sm text-muted-foreground mb-1">Hint:</p>
-            {word.definition ? (
-              <p className="text-foreground">{word.definition}</p>
-            ) : (
+            <p className="text-sm text-muted-foreground mb-3">💡 Hint:</p>
+            
+            {/* Word Length */}
+            <div className="mb-3">
+              <p className="text-foreground">
+                <span className="font-medium">Length:</span> {word.word.length} letters
+              </p>
+            </div>
+
+            {/* Dictionary Definition */}
+            {loadingDict ? (
+              <div className="flex items-center justify-center py-4">
+                <div className="text-sm text-muted-foreground">Loading definition...</div>
+              </div>
+            ) : dictData ? (
               <div className="space-y-2">
-                <p className="text-foreground">
-                  <span className="font-medium">Length:</span> {word.word.length} letters
-                </p>
-                <p className="text-foreground">
-                  <span className="font-medium">First letter:</span> {word.word.charAt(0).toUpperCase()}
-                </p>
-                <p className="text-foreground">
-                  <span className="font-medium">Pattern:</span> {word.word.split('').map((char, i) => i === 0 || i === word.word.length - 1 ? char : '_').join('')}
-                </p>
+                <div>
+                  <span className="text-sm font-medium text-muted-foreground">Definition:</span>
+                  <p className="text-foreground mt-1">{dictData.definition}</p>
+                </div>
+                {dictData.partOfSpeech && (
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground">Part of Speech:</span>
+                    <span className="text-foreground ml-2 italic">{dictData.partOfSpeech}</span>
+                  </div>
+                )}
+                {dictData.example && (
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground">Example:</span>
+                    <p className="text-foreground mt-1 italic">"{dictData.example}"</p>
+                  </div>
+                )}
+                {dictData.phonetic && (
+                  <div>
+                    <span className="text-sm font-medium text-muted-foreground">Phonetic:</span>
+                    <span className="text-foreground ml-2 font-mono">{dictData.phonetic}</span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="text-sm text-muted-foreground">
+                No definition available for this word.
               </div>
             )}
           </div>
