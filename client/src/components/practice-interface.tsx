@@ -190,7 +190,11 @@ export function PracticeInterface({
     if ('speechSynthesis' in window) {
       speechSynthesis.cancel(); // Stop any current speech
       
-      const utterance = new SpeechSynthesisUtterance(word.word);
+      // Clean the word text - ensure it's a string and handle compound words
+      const wordText = typeof word.word === 'string' ? word.word.trim() : String(word.word).trim();
+      console.log('Playing audio for word:', wordText); // Debug log
+      
+      const utterance = new SpeechSynthesisUtterance(wordText);
       utterance.rate = voiceSettings.rate;
       utterance.pitch = voiceSettings.pitch;
       utterance.volume = voiceSettings.volume;
@@ -235,7 +239,11 @@ export function PracticeInterface({
   const fetchDefinition = async (wordText: string) => {
     setLoadingDict(true);
     try {
-      const response = await fetch(`/api/dictionary/${encodeURIComponent(wordText)}`);
+      // Clean and ensure wordText is a proper string
+      const cleanWordText = typeof wordText === 'string' ? wordText.trim() : String(wordText).trim();
+      console.log('Fetching definition for:', cleanWordText); // Debug log
+      
+      const response = await fetch(`/api/dictionary/${encodeURIComponent(cleanWordText)}`);
       if (response.ok) {
         const data = await response.json();
         setDictData(data);
@@ -255,7 +263,9 @@ export function PracticeInterface({
     setShowHint(newShowHint);
     
     if (newShowHint && !dictData) {
-      fetchDefinition(word.word);
+      // Ensure we pass a clean word string
+      const wordText = typeof word.word === 'string' ? word.word : String(word.word);
+      fetchDefinition(wordText);
     }
   };
 

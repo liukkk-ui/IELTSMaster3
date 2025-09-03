@@ -155,18 +155,6 @@ export function ErrorReview({ errorWords }: ErrorReviewProps) {
               </div>
             )}
             
-            <Button 
-              size="sm" 
-              variant="outline"
-              className="w-full bg-accent/10 border-accent text-accent hover:bg-accent hover:text-white"
-              onClick={(e) => {
-                e.stopPropagation();
-                // Navigate to practice for this specific word
-              }}
-              data-testid={`button-practice-word-${errorWord.word.word}`}
-            >
-              Practice Again
-            </Button>
           </div>
         ))}
       </div>
