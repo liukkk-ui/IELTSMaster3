@@ -40,9 +40,17 @@ export function ErrorReview({ errorWords }: ErrorReviewProps) {
     setSelectedWords(new Set());
   };
 
-  const formatTimeAgo = (dateInput: Date | string) => {
+  const formatTimeAgo = (dateInput: Date | string | null | undefined) => {
+    if (!dateInput) return "Unknown";
+    
     const now = new Date();
     const date = typeof dateInput === 'string' ? new Date(dateInput) : dateInput;
+    
+    // Check if date is valid
+    if (!date || isNaN(date.getTime())) {
+      return "Invalid date";
+    }
+    
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
     
     if (diffInHours < 1) return "Less than an hour ago";
