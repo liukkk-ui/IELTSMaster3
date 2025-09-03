@@ -3,7 +3,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
-import { Volume2, X, ChevronLeft, ChevronRight, Lightbulb } from "lucide-react";
+import { Volume2, X, ChevronLeft, ChevronRight, Lightbulb, Settings } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 import type { Word } from "@shared/schema";
 
@@ -39,8 +39,50 @@ export function PracticeInterface({
     correctSpelling: string;
   } | null>(null);
   const [showHint, setShowHint] = useState(false);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
+  const [selectedVoice, setSelectedVoice] = useState<SpeechSynthesisVoice | null>(null);
+  const [voiceSettings, setVoiceSettings] = useState({
+    rate: 0.8,
+    pitch: 1,
+    volume: 0.8,
+    accent: 'us' // 'us', 'uk', 'au'
+  });
+  const [showVoiceSettings, setShowVoiceSettings] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Load available voices
+  useEffect(() => {
+    const loadVoices = () => {
+      const voices = speechSynthesis.getVoices();
+      setAvailableVoices(voices);
+      
+      // Auto-select best voice based on accent preference
+      const preferredVoices = voices.filter(voice => {
+        const lang = voice.lang.toLowerCase();
+        if (voiceSettings.accent === 'uk') {
+          return lang.includes('gb') || lang.includes('en-gb');
+        } else if (voiceSettings.accent === 'au') {
+          return lang.includes('au') || lang.includes('en-au');
+        } else {
+          return lang.includes('us') || lang.includes('en-us') || (!lang.includes('gb') && !lang.includes('au') && lang.startsWith('en'));
+        }
+      });
+      
+      if (preferredVoices.length > 0 && !selectedVoice) {
+        setSelectedVoice(preferredVoices[0]);
+      } else if (voices.length > 0 && !selectedVoice) {
+        setSelectedVoice(voices[0]);
+      }
+    };
+
+    loadVoices();
+    speechSynthesis.onvoiceschanged = loadVoices;
+    
+    return () => {
+      speechSynthesis.onvoiceschanged = null;
+    };
+  }, [voiceSettings.accent, selectedVoice]);
 
   const submitAttemptMutation = useMutation({
     mutationFn: async (attemptData: {
@@ -49,10 +91,7 @@ export function PracticeInterface({
       isCorrect: boolean;
       userId: string;
     }) => {
-      const response = await apiRequest("POST", "/api/practice-attempts", {
-        ...attemptData,
-        attemptedAt: new Date().toISOString()
-      });
+      const response = await apiRequest("POST", "/api/practice-attempts", attemptData);
       return response.json();
     },
     onSuccess: () => {
@@ -135,11 +174,18 @@ export function PracticeInterface({
   };
 
   const playAudio = () => {
-    // Simple audio feedback using Web Speech API
     if ('speechSynthesis' in window) {
+      speechSynthesis.cancel(); // Stop any current speech
+      
       const utterance = new SpeechSynthesisUtterance(word.word);
-      utterance.rate = 0.8;
-      utterance.volume = 0.8;
+      utterance.rate = voiceSettings.rate;
+      utterance.pitch = voiceSettings.pitch;
+      utterance.volume = voiceSettings.volume;
+      
+      if (selectedVoice) {
+        utterance.voice = selectedVoice;
+      }
+      
       speechSynthesis.speak(utterance);
     } else {
       toast({
@@ -147,6 +193,29 @@ export function PracticeInterface({
         description: "Speech synthesis is not supported in your browser.",
         variant: "destructive"
       });
+    }
+  };
+
+  const getVoicesByAccent = (accent: string) => {
+    return availableVoices.filter(voice => {
+      const lang = voice.lang.toLowerCase();
+      switch (accent) {
+        case 'uk':
+          return lang.includes('gb') || lang.includes('en-gb');
+        case 'au':
+          return lang.includes('au') || lang.includes('en-au');
+        case 'us':
+        default:
+          return lang.includes('us') || lang.includes('en-us') || (!lang.includes('gb') && !lang.includes('au') && lang.startsWith('en'));
+      }
+    });
+  };
+
+  const changeAccent = (accent: string) => {
+    setVoiceSettings(prev => ({ ...prev, accent }));
+    const voicesForAccent = getVoicesByAccent(accent);
+    if (voicesForAccent.length > 0) {
+      setSelectedVoice(voicesForAccent[0]);
     }
   };
 
@@ -198,13 +267,112 @@ export function PracticeInterface({
       {/* Word Practice Area */}
       <div className="text-center mb-8">
         <div className="mb-6">
-          <Button
-            onClick={playAudio}
-            className="w-16 h-16 rounded-full mb-4 hover:opacity-90"
-            data-testid="button-play-audio"
-          >
-            <Volume2 className="h-6 w-6" />
-          </Button>
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <Button
+              onClick={playAudio}
+              className="w-16 h-16 rounded-full hover:opacity-90"
+              data-testid="button-play-audio"
+            >
+              <Volume2 className="h-6 w-6" />
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowVoiceSettings(!showVoiceSettings)}
+              className="h-8 w-8 p-0"
+              data-testid="button-voice-settings"
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
+          
+          {/* Voice Settings Panel */}
+          {showVoiceSettings && (
+            <div className="bg-muted/30 rounded-lg p-4 mb-4 max-w-md mx-auto">
+              <h4 className="font-medium text-foreground mb-3">Voice Settings</h4>
+              
+              {/* Accent Selection */}
+              <div className="mb-3">
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">Accent</label>
+                <div className="flex gap-2">
+                  {[
+                    { value: 'us', label: 'US', flag: '🇺🇸' },
+                    { value: 'uk', label: 'UK', flag: '🇬🇧' },
+                    { value: 'au', label: 'AU', flag: '🇦🇺' }
+                  ].map((accent) => (
+                    <Button
+                      key={accent.value}
+                      variant={voiceSettings.accent === accent.value ? "default" : "outline"}
+                      size="sm"
+                      onClick={() => changeAccent(accent.value)}
+                      className="flex items-center gap-1"
+                      data-testid={`button-accent-${accent.value}`}
+                    >
+                      <span>{accent.flag}</span>
+                      <span>{accent.label}</span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Voice Selection */}
+              {availableVoices.length > 0 && (
+                <div className="mb-3">
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">Voice</label>
+                  <select
+                    value={selectedVoice?.name || ''}
+                    onChange={(e) => {
+                      const voice = availableVoices.find(v => v.name === e.target.value);
+                      setSelectedVoice(voice || null);
+                    }}
+                    className="w-full p-2 rounded border border-border bg-background text-foreground text-sm"
+                    data-testid="select-voice"
+                  >
+                    {getVoicesByAccent(voiceSettings.accent).map((voice) => (
+                      <option key={voice.name} value={voice.name}>
+                        {voice.name} ({voice.lang})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* Speed Control */}
+              <div className="mb-3">
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Speed: {voiceSettings.rate.toFixed(1)}x
+                </label>
+                <input
+                  type="range"
+                  min="0.5"
+                  max="2"
+                  step="0.1"
+                  value={voiceSettings.rate}
+                  onChange={(e) => setVoiceSettings(prev => ({ ...prev, rate: parseFloat(e.target.value) }))}
+                  className="w-full"
+                  data-testid="slider-speed"
+                />
+              </div>
+
+              {/* Volume Control */}
+              <div>
+                <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                  Volume: {Math.round(voiceSettings.volume * 100)}%
+                </label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={voiceSettings.volume}
+                  onChange={(e) => setVoiceSettings(prev => ({ ...prev, volume: parseFloat(e.target.value) }))}
+                  className="w-full"
+                  data-testid="slider-volume"
+                />
+              </div>
+            </div>
+          )}
+          
           <p className="text-sm text-muted-foreground mb-2">Listen and spell the word</p>
           {word.phonetic && (
             <div className="text-lg text-muted-foreground font-mono">{word.phonetic}</div>
