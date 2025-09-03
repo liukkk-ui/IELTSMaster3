@@ -130,9 +130,13 @@ export function PracticeInterface({
       
       onStatsUpdate(result.isCorrect);
       
+      // Handle different word structures for submit attempt
+      const wordData = word as any;
+      const actualWordId = wordData.word?.id || wordData.wordId || wordData.id;
+      
       // Submit the attempt
       submitAttemptMutation.mutate({
-        wordId: word.id,
+        wordId: actualWordId,
         userSpelling: result.userSpelling,
         isCorrect: result.isCorrect,
         userId: "default_user"
@@ -157,8 +161,14 @@ export function PracticeInterface({
       return;
     }
 
+    // Handle different word structures for spell check
+    const wordData = word as any;
+    const actualWordId = wordData.word?.id || wordData.wordId || wordData.id;
+    
+    console.log('Submitting spell check with wordId:', actualWordId); // Debug log
+
     spellCheckMutation.mutate({
-      wordId: word.id,
+      wordId: actualWordId,
       userSpelling: userInput.trim()
     });
   };
