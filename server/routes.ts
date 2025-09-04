@@ -173,6 +173,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test Papers endpoints
+  app.get('/api/units/:unitId/test-papers', async (req, res) => {
+    try {
+      const { unitId } = req.params;
+      const testPapers = await storage.getTestPapers(unitId);
+      res.json(testPapers);
+    } catch (error) {
+      console.error('Error fetching test papers:', error);
+      res.status(500).json({ error: 'Failed to fetch test papers' });
+    }
+  });
+
+  app.get('/api/test-papers/:testPaperId/words', async (req, res) => {
+    try {
+      const { testPaperId } = req.params;
+      const words = await storage.getTestPaperWords(testPaperId);
+      res.json(words);
+    } catch (error) {
+      console.error('Error fetching test paper words:', error);
+      res.status(500).json({ error: 'Failed to fetch test paper words' });
+    }
+  });
+
+  app.post('/api/units/:unitId/generate-test-papers', async (req, res) => {
+    try {
+      const { unitId } = req.params;
+      const { wordsPerPaper } = req.body;
+      const testPapers = await storage.generateTestPapersForUnit(unitId, wordsPerPaper);
+      res.json(testPapers);
+    } catch (error) {
+      console.error('Error generating test papers:', error);
+      res.status(500).json({ error: 'Failed to generate test papers' });
+    }
+  });
+
   // Spell check endpoint
   app.post("/api/spell-check", async (req, res) => {
     try {

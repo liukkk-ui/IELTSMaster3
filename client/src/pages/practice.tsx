@@ -7,8 +7,11 @@ import type { Word, ErrorWord } from "@shared/schema";
 export default function Practice() {
   const [, params] = useRoute("/practice/:unitId");
   const [, reviewParams] = useRoute("/practice/review");
+  const [, testPaperParams] = useRoute("/practice/test-paper/:testPaperId");
   const unitId = params?.unitId;
+  const testPaperId = testPaperParams?.testPaperId;
   const isReviewMode = !!reviewParams;
+  const isTestPaperMode = !!testPaperId;
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [sessionStats, setSessionStats] = useState({
     correct: 0,
@@ -16,15 +19,25 @@ export default function Practice() {
     total: 0
   });
 
-  // Fetch words based on mode - review, specific unit, or random practice
+  // Fetch words based on mode - review, test paper, specific unit, or random practice
   const { data: words, isLoading } = useQuery<Word[]>({
-    queryKey: isReviewMode ? ["/api/error-words"] : unitId ? ["/api/units", unitId, "words"] : ["/api/words/random"],
+    queryKey: isReviewMode 
+      ? ["/api/error-words"] 
+      : isTestPaperMode 
+        ? ["/api/test-papers", testPaperId, "words"] 
+        : unitId 
+          ? ["/api/units", unitId, "words"] 
+          : ["/api/words/random"],
     queryFn: async ({ queryKey }) => {
       if (isReviewMode) {
         const response = await fetch('/api/error-words');
         if (!response.ok) throw new Error('Failed to fetch error words');
         const errorWords: (ErrorWord & { word: Word })[] = await response.json();
         return errorWords.map(errorWord => errorWord.word); // Extract just the word data
+      } else if (isTestPaperMode) {
+        const response = await fetch(`/api/test-papers/${testPaperId}/words`);
+        if (!response.ok) throw new Error('Failed to fetch test paper words');
+        return response.json();
       } else if (unitId) {
         const response = await fetch(`/api/units/${unitId}/words`);
         if (!response.ok) throw new Error('Failed to fetch unit words');

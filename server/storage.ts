@@ -5,12 +5,14 @@ import {
   type PracticeAttempt, 
   type ErrorWord,
   type PracticeSettings,
+  type TestPaper,
   type InsertUnit,
   type InsertWord,
   type InsertUserProgress,
   type InsertPracticeAttempt,
   type InsertErrorWord,
-  type InsertPracticeSettings
+  type InsertPracticeSettings,
+  type InsertTestPaper
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 import fs from "fs";
@@ -49,6 +51,12 @@ export interface IStorage {
   // Practice Settings
   getPracticeSettings(userId?: string): Promise<PracticeSettings | undefined>;
   updatePracticeSettings(settings: InsertPracticeSettings): Promise<PracticeSettings>;
+  
+  // Test Papers
+  getTestPapers(unitId: string): Promise<TestPaper[]>;
+  createTestPaper(testPaper: InsertTestPaper): Promise<TestPaper>;
+  generateTestPapersForUnit(unitId: string, wordsPerPaper?: number): Promise<TestPaper[]>;
+  getTestPaperWords(testPaperId: string): Promise<Word[]>;
 }
 
 export class MemStorage implements IStorage {
@@ -58,6 +66,7 @@ export class MemStorage implements IStorage {
   private practiceAttempts: Map<string, PracticeAttempt> = new Map();
   private errorWords: Map<string, ErrorWord> = new Map();
   private practiceSettings: Map<string, PracticeSettings> = new Map();
+  private testPapers: Map<string, TestPaper> = new Map();
 
   constructor() {
     this.initializeData();
@@ -261,6 +270,82 @@ export class MemStorage implements IStorage {
       this.practiceSettings.set(id, newSettings);
       return newSettings;
     }
+  }
+
+  // Test Papers
+  async getTestPapers(unitId: string): Promise<TestPaper[]> {
+    const testPapers = Array.from(this.testPapers.values())
+      .filter(paper => paper.unitId === unitId)
+      .sort((a, b) => a.paperNumber - b.paperNumber);
+    
+    // If no test papers exist for this unit, generate them
+    if (testPapers.length === 0) {
+      return await this.generateTestPapersForUnit(unitId);
+    }
+    
+    return testPapers;
+  }
+
+  async createTestPaper(testPaper: InsertTestPaper): Promise<TestPaper> {
+    const id = randomUUID();
+    const newTestPaper: TestPaper = {
+      id,
+      ...testPaper,
+      createdAt: new Date()
+    };
+    
+    this.testPapers.set(id, newTestPaper);
+    return newTestPaper;
+  }
+
+  async generateTestPapersForUnit(unitId: string, wordsPerPaper: number = 30): Promise<TestPaper[]> {
+    const words = await this.getWordsByUnit(unitId);
+    const unit = await this.getUnit(unitId);
+    
+    if (!words.length || !unit) {
+      return [];
+    }
+
+    // Clear existing test papers for this unit
+    Array.from(this.testPapers.values())
+      .filter(paper => paper.unitId === unitId)
+      .forEach(paper => this.testPapers.delete(paper.id));
+
+    const testPapers: TestPaper[] = [];
+    const totalPapers = Math.ceil(words.length / wordsPerPaper);
+
+    for (let i = 0; i < totalPapers; i++) {
+      const startIndex = i * wordsPerPaper;
+      const endIndex = Math.min(startIndex + wordsPerPaper, words.length);
+      const paperWords = words.slice(startIndex, endIndex);
+      
+      const testPaper: TestPaper = {
+        id: randomUUID(),
+        unitId,
+        paperNumber: i + 1,
+        title: `${unit.title} - Test ${i + 1}`,
+        wordsPerPaper,
+        wordIds: paperWords.map(w => w.id),
+        createdAt: new Date()
+      };
+      
+      this.testPapers.set(testPaper.id, testPaper);
+      testPapers.push(testPaper);
+    }
+
+    return testPapers;
+  }
+
+  async getTestPaperWords(testPaperId: string): Promise<Word[]> {
+    const testPaper = this.testPapers.get(testPaperId);
+    if (!testPaper) {
+      return [];
+    }
+
+    const wordIds = testPaper.wordIds as string[];
+    return wordIds
+      .map(id => this.words.get(id))
+      .filter((word): word is Word => word !== undefined);
   }
 }
 

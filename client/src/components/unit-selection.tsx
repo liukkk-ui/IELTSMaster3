@@ -83,6 +83,32 @@ export function UnitSelection({ units, progress }: UnitSelectionProps) {
                     {accuracy > 0 ? `${accuracy}% accuracy` : 'Not started'}
                   </span>
                 </div>
+                
+                <div className="flex gap-2 mt-3 pt-3 border-t border-border">
+                  <Button 
+                    size="sm" 
+                    className="flex-1" 
+                    onClick={(e) => {
+                      e.preventDefault();
+                      window.location.href = `/practice/${unit.id}`;
+                    }}
+                    data-testid={`button-practice-unit-${unit.number}`}
+                  >
+                    Practice All
+                  </Button>
+                  <Button 
+                    size="sm" 
+                    variant="outline" 
+                    className="flex-1" 
+                    onClick={(e) => {
+                      e.preventDefault(); 
+                      window.location.href = `/test-papers/${unit.id}`;
+                    }}
+                    data-testid={`button-test-papers-unit-${unit.number}`}
+                  >
+                    Test Papers
+                  </Button>
+                </div>
               </Link>
             );
           })}

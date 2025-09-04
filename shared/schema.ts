@@ -58,6 +58,16 @@ export const practiceSettings = pgTable("practice_settings", {
   practiceSpeed: text("practice_speed").notNull().default("normal"), // "slow", "normal", "fast"
 });
 
+export const testPapers = pgTable("test_papers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  unitId: varchar("unit_id").notNull().references(() => units.id),
+  paperNumber: integer("paper_number").notNull(),
+  title: text("title").notNull(),
+  wordsPerPaper: integer("words_per_paper").notNull().default(30),
+  wordIds: jsonb("word_ids").notNull(), // Array of word IDs in this test paper
+  createdAt: timestamp("created_at").notNull().default(sql`now()`),
+});
+
 // Insert schemas
 export const insertUnitSchema = createInsertSchema(units).omit({ id: true, wordCount: true });
 export const insertWordSchema = createInsertSchema(words).omit({ id: true });
@@ -65,6 +75,7 @@ export const insertUserProgressSchema = createInsertSchema(userProgress).omit({ 
 export const insertPracticeAttemptSchema = createInsertSchema(practiceAttempts).omit({ id: true });
 export const insertErrorWordSchema = createInsertSchema(errorWords).omit({ id: true });
 export const insertPracticeSettingsSchema = createInsertSchema(practiceSettings).omit({ id: true });
+export const insertTestPaperSchema = createInsertSchema(testPapers).omit({ id: true, createdAt: true });
 
 // Types
 export type Unit = typeof units.$inferSelect;
@@ -73,6 +84,7 @@ export type UserProgress = typeof userProgress.$inferSelect;
 export type PracticeAttempt = typeof practiceAttempts.$inferSelect;
 export type ErrorWord = typeof errorWords.$inferSelect;
 export type PracticeSettings = typeof practiceSettings.$inferSelect;
+export type TestPaper = typeof testPapers.$inferSelect;
 
 export type InsertUnit = z.infer<typeof insertUnitSchema>;
 export type InsertWord = z.infer<typeof insertWordSchema>;
@@ -80,3 +92,4 @@ export type InsertUserProgress = z.infer<typeof insertUserProgressSchema>;
 export type InsertPracticeAttempt = z.infer<typeof insertPracticeAttemptSchema>;
 export type InsertErrorWord = z.infer<typeof insertErrorWordSchema>;
 export type InsertPracticeSettings = z.infer<typeof insertPracticeSettingsSchema>;
+export type InsertTestPaper = z.infer<typeof insertTestPaperSchema>;
