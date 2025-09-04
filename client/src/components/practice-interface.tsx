@@ -302,20 +302,31 @@ export function PracticeInterface({
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    // Ctrl+A to play audio
-    if (e.ctrlKey && e.key === "a") {
-      e.preventDefault();
-      playAudio();
-      return;
-    }
-    
-    if (e.key === "Enter" && !feedback) {
-      handleSubmit();
-    } else if (e.key === "Enter" && feedback) {
-      handleNext();
-    }
-  };
+  // Global keyboard event handling
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Ctrl+A to play audio
+      if (e.ctrlKey && e.key === "a") {
+        e.preventDefault();
+        playAudio();
+        return;
+      }
+      
+      // Enter key handling
+      if (e.key === "Enter") {
+        if (!feedback) {
+          handleSubmit();
+        } else {
+          handleNext();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [feedback, userInput, handleSubmit, handleNext, playAudio]);
 
   const progressPercentage = Math.round(((currentIndex + 1) / totalWords) * 100);
   const accuracy = sessionStats.total > 0 ? Math.round((sessionStats.correct / sessionStats.total) * 100) : 0;
@@ -483,7 +494,6 @@ export function PracticeInterface({
             type="text"
             value={userInput}
             onChange={(e) => setUserInput(e.target.value)}
-            onKeyPress={handleKeyPress}
             className={`text-2xl text-center py-4 px-6 ${
               feedback?.show
                 ? feedback.isCorrect
@@ -492,7 +502,7 @@ export function PracticeInterface({
                 : ""
             }`}
             placeholder="Type the word here..."
-            disabled={feedback?.show || spellCheckMutation.isPending}
+            readOnly={feedback?.show || spellCheckMutation.isPending}
             data-testid="input-spelling"
           />
           
