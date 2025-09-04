@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -180,7 +180,6 @@ export function PracticeInterface({
     setShowHint(false);
     setDictData(null);
     onNext();
-    // Audio will be played automatically when word changes (see useEffect below)
   };
 
   const handlePrevious = () => {
@@ -324,13 +323,12 @@ export function PracticeInterface({
     };
   }, [feedback, userInput, handleSubmit, handleNext, playAudio]);
 
-  // Auto-play audio when word changes (for next/previous navigation)
+  // Simple: Play audio when currentIndex increases (user advances)
   useEffect(() => {
-    // Only auto-play when advancing (not on initial load)
-    if (currentIndex > 0 || (isReviewMode && currentIndex >= 0)) {
-      playAudio();
+    if (currentIndex > 0) {
+      setTimeout(() => playAudio(), 150);
     }
-  }, [word.id]); // Trigger when word changes
+  }, [currentIndex, word.id]);
 
   const progressPercentage = Math.round(((currentIndex + 1) / totalWords) * 100);
   const accuracy = sessionStats.total > 0 ? Math.round((sessionStats.correct / sessionStats.total) * 100) : 0;
