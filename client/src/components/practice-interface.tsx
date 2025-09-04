@@ -180,11 +180,7 @@ export function PracticeInterface({
     setShowHint(false);
     setDictData(null);
     onNext();
-    
-    // Play audio for the new word after a short delay to ensure word has updated
-    setTimeout(() => {
-      playAudio();
-    }, 100);
+    // Audio will be played automatically when word changes (see useEffect below)
   };
 
   const handlePrevious = () => {
@@ -327,6 +323,14 @@ export function PracticeInterface({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [feedback, userInput, handleSubmit, handleNext, playAudio]);
+
+  // Auto-play audio when word changes (for next/previous navigation)
+  useEffect(() => {
+    // Only auto-play when advancing (not on initial load)
+    if (currentIndex > 0 || (isReviewMode && currentIndex >= 0)) {
+      playAudio();
+    }
+  }, [word.id]); // Trigger when word changes
 
   const progressPercentage = Math.round(((currentIndex + 1) / totalWords) * 100);
   const accuracy = sessionStats.total > 0 ? Math.round((sessionStats.correct / sessionStats.total) * 100) : 0;
