@@ -142,12 +142,8 @@ export function PracticeInterface({
         userId: "default_user"
       });
 
-      // If answer is correct, automatically move to next word after a short delay
-      if (result.isCorrect) {
-        setTimeout(() => {
-          handleNext(); // This will move to next word and play audio automatically
-        }, 1500); // 1.5 second delay to let user see the correct feedback
-      }
+      // Auto-advance disabled - user will use Enter key for both correct and incorrect
+      // Both correct and incorrect answers stay on screen until user presses Enter
     },
     onError: () => {
       toast({
@@ -307,6 +303,13 @@ export function PracticeInterface({
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
+    // Ctrl+A to play audio
+    if (e.ctrlKey && e.key === "a") {
+      e.preventDefault();
+      playAudio();
+      return;
+    }
+    
     if (e.key === "Enter" && !feedback) {
       handleSubmit();
     } else if (e.key === "Enter" && feedback) {
@@ -336,6 +339,9 @@ export function PracticeInterface({
             <span data-testid="text-session-stats">
               Correct: {sessionStats.correct} | Incorrect: {sessionStats.incorrect}
             </span>
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            💡 <strong>Enter</strong> to submit/next • <strong>Ctrl+A</strong> to play audio
           </div>
         </div>
         <Button 
