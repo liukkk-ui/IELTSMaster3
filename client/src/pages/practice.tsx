@@ -50,14 +50,16 @@ export default function Practice() {
     }
   });
 
-  const currentWord = words?.[currentWordIndex];
-
-  if (!currentWord) {
+  // Check loading state FIRST to prevent error flashes
+  if (isLoading) {
     return (
       <main className="max-w-4xl mx-auto px-6 py-8">
-        <div className="bg-card rounded-xl border border-border p-8 text-center">
-          <h2 className="text-2xl font-bold text-foreground mb-2">Loading...</h2>
-          <p className="text-muted-foreground">Preparing your practice session.</p>
+        <div className="bg-card rounded-xl border border-border p-8">
+          <div className="animate-pulse space-y-8">
+            <div className="h-8 bg-muted rounded w-1/2"></div>
+            <div className="h-2 bg-muted rounded"></div>
+            <div className="h-32 bg-muted rounded"></div>
+          </div>
         </div>
       </main>
     );
@@ -83,20 +85,7 @@ export default function Practice() {
     }));
   };
 
-  if (isLoading) {
-    return (
-      <main className="max-w-4xl mx-auto px-6 py-8">
-        <div className="bg-card rounded-xl border border-border p-8">
-          <div className="animate-pulse space-y-8">
-            <div className="h-8 bg-muted rounded w-1/2"></div>
-            <div className="h-2 bg-muted rounded"></div>
-            <div className="h-32 bg-muted rounded"></div>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
+  // Check if we have no words available
   if (!words || words.length === 0) {
     return (
       <main className="max-w-4xl mx-auto px-6 py-8">
@@ -106,10 +95,24 @@ export default function Practice() {
           </h2>
           <p className="text-muted-foreground">
             {isReviewMode 
-              ? "Great job! You don't have any words that need review right now." 
-              : "No words found for practice."
+              ? "Great job! You don't have any words to review right now."
+              : "No words found for practice. Please try again later."
             }
           </p>
+        </div>
+      </main>
+    );
+  }
+
+  const currentWord = words[currentWordIndex];
+
+  // Final safety check for current word (shouldn't happen after above checks)
+  if (!currentWord) {
+    return (
+      <main className="max-w-4xl mx-auto px-6 py-8">
+        <div className="bg-card rounded-xl border border-border p-8 text-center">
+          <h2 className="text-2xl font-bold text-foreground mb-2">Loading word...</h2>
+          <p className="text-muted-foreground">Preparing your practice session.</p>
         </div>
       </main>
     );

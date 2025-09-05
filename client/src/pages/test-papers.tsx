@@ -10,11 +10,11 @@ import type { Unit, TestPaper } from "@shared/schema";
 export default function TestPapersPage() {
   const { unitId } = useParams<{ unitId: string }>();
 
-  const { data: unit, isLoading: unitLoading } = useQuery<Unit>({
+  const { data: unit, isLoading: unitLoading, error: unitError } = useQuery<Unit>({
     queryKey: ["/api/units", unitId],
   });
 
-  const { data: testPapers, isLoading: papersLoading } = useQuery<TestPaper[]>({
+  const { data: testPapers, isLoading: papersLoading, error: papersError } = useQuery<TestPaper[]>({
     queryKey: ["/api/units", unitId, "test-papers"],
   });
 
@@ -37,6 +37,7 @@ export default function TestPapersPage() {
     generatePapersMutation.mutate({ wordsPerPaper, useExcelStructure });
   };
 
+  // Check loading state FIRST to prevent error flashes
   if (unitLoading || papersLoading) {
     return (
       <main className="max-w-6xl mx-auto px-6 py-8">
@@ -47,6 +48,23 @@ export default function TestPapersPage() {
               <div key={i} className="h-32 bg-muted rounded-lg"></div>
             ))}
           </div>
+        </div>
+      </main>
+    );
+  }
+
+  // Handle errors without showing flash
+  if (unitError || papersError) {
+    return (
+      <main className="max-w-6xl mx-auto px-6 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Unable to load test papers</h1>
+          <p className="text-muted-foreground mb-4">
+            There was an issue loading the data. Please try again.
+          </p>
+          <Link href="/">
+            <Button>Return Home</Button>
+          </Link>
         </div>
       </main>
     );
