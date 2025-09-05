@@ -3,7 +3,7 @@ import { LogOut, User, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import {
   DropdownMenu,
@@ -33,11 +33,13 @@ export default function AppHeader() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate auth cache and redirect to landing page
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Logged out successfully",
         description: "See you next time!",
       });
-      window.location.reload(); // Force page reload to clear auth state
+      window.location.href = "/";
     },
     onError: () => {
       toast({

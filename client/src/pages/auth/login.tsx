@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { GraduationCap, Eye, EyeOff } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -41,6 +41,8 @@ export default function Login() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate auth cache to update authentication state immediately
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Welcome back!",
         description: "You've been logged in successfully.",

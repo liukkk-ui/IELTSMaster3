@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { GraduationCap, Mail, Phone, Eye, EyeOff } from "lucide-react";
 import { useLocation } from "wouter";
 
@@ -47,6 +47,8 @@ export default function Register() {
       return response.json();
     },
     onSuccess: () => {
+      // Invalidate auth cache to update authentication state immediately
+      queryClient.invalidateQueries({ queryKey: ["/api/auth/user"] });
       toast({
         title: "Welcome to FreeSpell!",
         description: "Your account has been created successfully.",
