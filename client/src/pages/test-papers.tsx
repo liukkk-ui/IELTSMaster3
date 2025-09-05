@@ -19,11 +19,11 @@ export default function TestPapersPage() {
   });
 
   const generatePapersMutation = useMutation({
-    mutationFn: async (wordsPerPaper: number) => {
+    mutationFn: async ({ wordsPerPaper, useExcelStructure }: { wordsPerPaper: number, useExcelStructure: boolean }) => {
       const response = await fetch(`/api/units/${unitId}/generate-test-papers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ wordsPerPaper }),
+        body: JSON.stringify({ wordsPerPaper, useExcelStructure }),
       });
       if (!response.ok) throw new Error("Failed to generate test papers");
       return response.json();
@@ -33,8 +33,8 @@ export default function TestPapersPage() {
     },
   });
 
-  const handleGeneratePapers = (wordsPerPaper: number) => {
-    generatePapersMutation.mutate(wordsPerPaper);
+  const handleGeneratePapers = (wordsPerPaper: number, useExcelStructure: boolean = true) => {
+    generatePapersMutation.mutate({ wordsPerPaper, useExcelStructure });
   };
 
   if (unitLoading || papersLoading) {
@@ -88,21 +88,21 @@ export default function TestPapersPage() {
         
         <div className="flex gap-2">
           <Button 
-            onClick={() => handleGeneratePapers(30)}
+            onClick={() => handleGeneratePapers(30, true)}
             disabled={generatePapersMutation.isPending}
-            variant="outline"
-            data-testid="button-generate-30"
+            data-testid="button-generate-excel"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Generate (30 words)
+            Generate from Excel
           </Button>
           <Button 
-            onClick={() => handleGeneratePapers(50)}
+            onClick={() => handleGeneratePapers(30, false)}
             disabled={generatePapersMutation.isPending}
-            data-testid="button-generate-50"
+            variant="outline"
+            data-testid="button-generate-custom"
           >
             <Plus className="w-4 h-4 mr-2" />
-            Generate (50 words)
+            Custom (30 words)
           </Button>
         </div>
       </div>
@@ -172,21 +172,21 @@ export default function TestPapersPage() {
             </p>
             <div className="flex gap-4 justify-center">
               <Button 
-                onClick={() => handleGeneratePapers(30)}
+                onClick={() => handleGeneratePapers(30, true)}
                 disabled={generatePapersMutation.isPending}
-                data-testid="button-generate-30-empty"
+                data-testid="button-generate-excel-empty"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Generate 30-word tests
+                Generate from Excel Structure
               </Button>
               <Button 
-                onClick={() => handleGeneratePapers(50)}
+                onClick={() => handleGeneratePapers(30, false)}
                 disabled={generatePapersMutation.isPending}
                 variant="outline"
-                data-testid="button-generate-50-empty"
+                data-testid="button-generate-custom-empty"
               >
                 <Plus className="w-4 h-4 mr-2" />
-                Generate 50-word tests
+                Custom 30-word tests
               </Button>
             </div>
           </div>

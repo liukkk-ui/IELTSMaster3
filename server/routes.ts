@@ -228,8 +228,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/units/:unitId/generate-test-papers', async (req, res) => {
     try {
       const { unitId } = req.params;
-      const { wordsPerPaper } = req.body;
-      const testPapers = await storage.generateTestPapersForUnit(unitId, wordsPerPaper);
+      const { wordsPerPaper, useExcelStructure } = req.body;
+      
+      let testPapers;
+      if (useExcelStructure !== false) {
+        // Use predefined Excel structure by default
+        testPapers = await storage.generatePredefinedTestPapersForUnit(unitId);
+      } else {
+        // Use custom word count generation if explicitly requested
+        testPapers = await storage.generateTestPapersForUnit(unitId, wordsPerPaper);
+      }
+      
       res.json(testPapers);
     } catch (error) {
       console.error('Error generating test papers:', error);

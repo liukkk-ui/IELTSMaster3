@@ -56,6 +56,7 @@ export interface IStorage {
   getTestPapers(unitId: string): Promise<TestPaper[]>;
   createTestPaper(testPaper: InsertTestPaper): Promise<TestPaper>;
   generateTestPapersForUnit(unitId: string, wordsPerPaper?: number): Promise<TestPaper[]>;
+  generatePredefinedTestPapersForUnit(unitId: string): Promise<TestPaper[]>;
   getTestPaperWords(testPaperId: string): Promise<Word[]>;
 }
 
@@ -278,9 +279,9 @@ export class MemStorage implements IStorage {
       .filter(paper => paper.unitId === unitId)
       .sort((a, b) => a.paperNumber - b.paperNumber);
     
-    // If no test papers exist for this unit, generate them
+    // If no test papers exist for this unit, generate them using Excel data
     if (testPapers.length === 0) {
-      return await this.generateTestPapersForUnit(unitId);
+      return await this.generatePredefinedTestPapersForUnit(unitId);
     }
     
     return testPapers;
@@ -334,6 +335,74 @@ export class MemStorage implements IStorage {
     }
 
     return testPapers;
+  }
+
+  async generatePredefinedTestPapersForUnit(unitId: string): Promise<TestPaper[]> {
+    const unit = await this.getUnit(unitId);
+    if (!unit) {
+      return [];
+    }
+
+    // Load test paper mapping from Excel data
+    const testPaperMappingPath = path.join(__dirname, 'test-paper-mapping.json');
+    if (!fs.existsSync(testPaperMappingPath)) {
+      // Fallback to regular generation if Excel data not available
+      return await this.generateTestPapersForUnit(unitId);
+    }
+
+    const testPaperMapping = JSON.parse(fs.readFileSync(testPaperMappingPath, 'utf8'));
+    
+    // Map unit number to chapter number (units are chapters in the Excel data)
+    const chapterNumber = unit.number;
+    const chapterTestPapers = testPaperMapping.filter(tp => tp.chapter === chapterNumber);
+
+    if (chapterTestPapers.length === 0) {
+      // Fallback to regular generation if no predefined test papers for this chapter
+      return await this.generateTestPapersForUnit(unitId);
+    }
+
+    // Clear existing test papers for this unit
+    Array.from(this.testPapers.values())
+      .filter(paper => paper.unitId === unitId)
+      .forEach(paper => this.testPapers.delete(paper.id));
+
+    // Get all words for this unit to match against Excel words
+    const unitWords = await this.getWordsByUnit(unitId);
+    const wordMap = new Map<string, Word>();
+    unitWords.forEach(word => {
+      wordMap.set(word.word.toLowerCase().trim(), word);
+    });
+
+    const testPapers: TestPaper[] = [];
+
+    for (const excelTestPaper of chapterTestPapers) {
+      // Find matching words from the database
+      const matchingWordIds: string[] = [];
+      
+      for (const excelWord of excelTestPaper.words) {
+        const matchingWord = wordMap.get(excelWord.toLowerCase().trim());
+        if (matchingWord) {
+          matchingWordIds.push(matchingWord.id);
+        }
+      }
+
+      if (matchingWordIds.length > 0) {
+        const testPaper: TestPaper = {
+          id: randomUUID(),
+          unitId,
+          paperNumber: excelTestPaper.testPaper,
+          title: `${unit.title} - Test Paper ${excelTestPaper.testPaper}`,
+          wordsPerPaper: matchingWordIds.length,
+          wordIds: matchingWordIds,
+          createdAt: new Date()
+        };
+        
+        this.testPapers.set(testPaper.id, testPaper);
+        testPapers.push(testPaper);
+      }
+    }
+
+    return testPapers.sort((a, b) => a.paperNumber - b.paperNumber);
   }
 
   async getTestPaperWords(testPaperId: string): Promise<Word[]> {
