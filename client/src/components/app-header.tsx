@@ -1,5 +1,5 @@
 import { Link, useLocation } from "wouter";
-import { Settings, User } from "lucide-react";
+import { Settings, User, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function AppHeader() {
@@ -16,8 +16,8 @@ export default function AppHeader() {
       <div className="max-w-7xl mx-auto px-6 py-4">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-4">
-            <div className="w-10 h-10 bg-primary rounded-xl flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">F</span>
+            <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-xl flex items-center justify-center shadow-lg">
+              <GraduationCap className="h-5 w-5 text-primary-foreground" />
             </div>
             <div>
               <h1 className="text-xl font-semibold text-foreground">FreeSpell</h1>
