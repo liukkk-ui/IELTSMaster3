@@ -13,7 +13,13 @@ export default function Home() {
     queryKey: ["/api/progress"],
   });
 
-  const { data: stats, isLoading: statsLoading } = useQuery({
+  const { data: stats, isLoading: statsLoading } = useQuery<{
+    totalWords: number;
+    masteredWords: number;
+    errorWords: number;
+    currentStreak: number;
+    overallAccuracy?: number;
+  }>({
     queryKey: ["/api/stats"],
   });
 
