@@ -17,11 +17,23 @@ import AppHeader from "@/components/app-header";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  // Show loading state during initial authentication check
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="animate-pulse space-y-4 text-center">
+          <div className="w-16 h-16 bg-muted rounded-lg mx-auto"></div>
+          <div className="h-4 bg-muted rounded w-32 mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
-      {!isLoading && isAuthenticated && <AppHeader />}
+      {isAuthenticated && <AppHeader />}
       <Switch>
-        {isLoading || !isAuthenticated ? (
+        {!isAuthenticated ? (
           <>
             <Route path="/" component={Landing} />
             <Route path="/login" component={Login} />
