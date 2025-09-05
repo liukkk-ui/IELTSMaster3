@@ -18,7 +18,7 @@ export default function Landing() {
             </div>
           </div>
           <Button 
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => window.location.href = '/register'}
             data-testid="button-login"
           >
             Get Started
@@ -39,7 +39,7 @@ export default function Landing() {
           <div className="space-x-4">
             <Button 
               size="lg" 
-              onClick={() => window.location.href = '/api/login'}
+              onClick={() => window.location.href = '/register'}
               data-testid="button-start-learning"
             >
               Start Learning Now
@@ -124,7 +124,7 @@ export default function Landing() {
           </p>
           <Button 
             size="lg" 
-            onClick={() => window.location.href = '/api/login'}
+            onClick={() => window.location.href = '/register'}
             data-testid="button-get-started-cta"
           >
             Get Started for Free

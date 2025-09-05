@@ -27,7 +27,9 @@ const __dirname = path.dirname(__filename);
 export interface IStorage {
   // Users (required for authentication)
   getUser(id: string): Promise<User | undefined>;
-  upsertUser(user: UpsertUser): Promise<User>;
+  getUserByEmailOrPhone(identifier: string): Promise<User | undefined>;
+  createUser(user: UpsertUser): Promise<User>;
+  updateUser(id: string, user: Partial<UpsertUser>): Promise<User | undefined>;
   
   // Units
   getUnits(): Promise<Unit[]>;
@@ -85,31 +87,48 @@ export class MemStorage implements IStorage {
     return this.users.get(id);
   }
 
-  async upsertUser(userData: UpsertUser): Promise<User> {
-    const existingUser = this.users.get(userData.id!);
+  async getUserByEmailOrPhone(identifier: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      user => user.email === identifier || user.phoneNumber === identifier
+    );
+  }
+
+  async createUser(userData: UpsertUser): Promise<User> {
+    const id = userData.id || randomUUID();
     const now = new Date();
     
-    let user: User;
-    if (existingUser) {
-      user = {
-        ...existingUser,
-        ...userData,
-        updatedAt: now,
-      };
-    } else {
-      user = {
-        id: userData.id || randomUUID(),
-        email: userData.email || null,
-        firstName: userData.firstName || null,
-        lastName: userData.lastName || null,
-        profileImageUrl: userData.profileImageUrl || null,
-        createdAt: now,
-        updatedAt: now,
-      };
-    }
+    const user: User = {
+      id,
+      email: userData.email || null,
+      phoneNumber: userData.phoneNumber || null,
+      password: userData.password!,
+      firstName: userData.firstName || null,
+      lastName: userData.lastName || null,
+      profileImageUrl: userData.profileImageUrl || null,
+      isVerified: userData.isVerified || false,
+      verificationToken: userData.verificationToken || null,
+      resetPasswordToken: userData.resetPasswordToken || null,
+      resetPasswordExpires: userData.resetPasswordExpires || null,
+      createdAt: now,
+      updatedAt: now,
+    };
     
-    this.users.set(user.id, user);
+    this.users.set(id, user);
     return user;
+  }
+
+  async updateUser(id: string, userData: Partial<UpsertUser>): Promise<User | undefined> {
+    const existingUser = this.users.get(id);
+    if (!existingUser) return undefined;
+    
+    const updatedUser: User = {
+      ...existingUser,
+      ...userData,
+      updatedAt: new Date(),
+    };
+    
+    this.users.set(id, updatedUser);
+    return updatedUser;
   }
 
   private initializeData() {

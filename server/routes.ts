@@ -2,19 +2,130 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { insertPracticeAttemptSchema, insertErrorWordSchema } from "@shared/schema";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, requireAuth, hashPassword, generateToken } from "./auth";
+import passport from "passport";
 import { z } from "zod";
+
+const registerSchema = z.object({
+  email: z.string().email().optional(),
+  phoneNumber: z.string().min(10).optional(),
+  password: z.string().min(6),
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+}).refine((data) => data.email || data.phoneNumber, {
+  message: "Either email or phone number is required",
+});
+
+const loginSchema = z.object({
+  identifier: z.string(), // email or phone
+  password: z.string(),
+});
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
-  // Auth routes
-  app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
+  // Registration endpoint
+  app.post('/api/auth/register', async (req, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      const validation = registerSchema.safeParse(req.body);
+      if (!validation.success) {
+        return res.status(400).json({ 
+          message: "Invalid input", 
+          errors: validation.error.errors 
+        });
+      }
+
+      const { email, phoneNumber, password, firstName, lastName } = validation.data;
+
+      // Check if user already exists
+      const existingUser = await storage.getUserByEmailOrPhone(email || phoneNumber!);
+      if (existingUser) {
+        return res.status(400).json({ message: "User already exists" });
+      }
+
+      // Hash password and create user
+      const hashedPassword = await hashPassword(password);
+      const user = await storage.createUser({
+        email: email || null,
+        phoneNumber: phoneNumber || null,
+        password: hashedPassword,
+        firstName: firstName || null,
+        lastName: lastName || null,
+        isVerified: false,
+      });
+
+      // Generate token and set session
+      const token = generateToken(user.id);
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Login failed after registration" });
+        }
+        
+        // Return user without password
+        const { password: _, ...userWithoutPassword } = user;
+        res.status(201).json({ 
+          user: userWithoutPassword, 
+          token,
+          message: "Registration successful" 
+        });
+      });
+    } catch (error) {
+      console.error("Registration error:", error);
+      res.status(500).json({ message: "Registration failed" });
+    }
+  });
+
+  // Login endpoint
+  app.post('/api/auth/login', (req, res, next) => {
+    const validation = loginSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({ 
+        message: "Invalid input", 
+        errors: validation.error.errors 
+      });
+    }
+
+    passport.authenticate('local', (err: any, user: any, info: any) => {
+      if (err) {
+        return res.status(500).json({ message: "Authentication error" });
+      }
+      if (!user) {
+        return res.status(401).json({ message: info?.message || "Invalid credentials" });
+      }
+
+      req.login(user, (err) => {
+        if (err) {
+          return res.status(500).json({ message: "Login failed" });
+        }
+
+        const token = generateToken(user.id);
+        const { password: _, ...userWithoutPassword } = user;
+        res.json({ 
+          user: userWithoutPassword, 
+          token,
+          message: "Login successful" 
+        });
+      });
+    })(req, res, next);
+  });
+
+  // Logout endpoint
+  app.post('/api/auth/logout', (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.json({ message: "Logout successful" });
+    });
+  });
+
+  // Get current user
+  app.get('/api/auth/user', requireAuth, async (req, res) => {
+    try {
+      const user = req.user as any;
+      const { password: _, ...userWithoutPassword } = user;
+      res.json(userWithoutPassword);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });

@@ -1,9 +1,47 @@
 import { Link, useLocation } from "wouter";
-import { Settings, User, GraduationCap } from "lucide-react";
+import { LogOut, User, GraduationCap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export default function AppHeader() {
   const [location] = useLocation();
+  const { user } = useAuth();
+  const { toast } = useToast();
+
+  const logoutMutation = useMutation({
+    mutationFn: async () => {
+      return await apiRequest("/api/auth/logout", {
+        method: "POST",
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Logged out successfully",
+        description: "See you next time!",
+      });
+      window.location.reload(); // Force page reload to clear auth state
+    },
+    onError: () => {
+      toast({
+        title: "Logout failed",
+        description: "There was an error logging out. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleLogout = () => {
+    logoutMutation.mutate();
+  };
 
   const navItems = [
     { href: "/", label: "Dashboard", active: location === "/" },
@@ -43,17 +81,31 @@ export default function AppHeader() {
           </nav>
           
           <div className="flex items-center space-x-3">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="w-9 h-9 hover:bg-muted"
-              data-testid="button-settings"
-            >
-              <Settings className="h-4 w-4" />
-            </Button>
-            <div className="w-9 h-9 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
-              <User className="h-4 w-4 text-primary-foreground" />
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="flex items-center space-x-2"
+                  data-testid="button-user-menu"
+                >
+                  <div className="w-6 h-6 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
+                    <User className="h-3 w-3 text-primary-foreground" />
+                  </div>
+                  <span className="text-sm">{user?.firstName || user?.email || "User"}</span>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  disabled={logoutMutation.isPending}
+                  data-testid="button-logout"
+                >
+                  <LogOut className="h-4 w-4 mr-2" />
+                  {logoutMutation.isPending ? "Logging out..." : "Logout"}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </div>
