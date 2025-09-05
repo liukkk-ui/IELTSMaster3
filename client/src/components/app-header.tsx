@@ -19,9 +19,18 @@ export default function AppHeader() {
 
   const logoutMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest("/api/auth/logout", {
+      const response = await fetch("/api/auth/logout", {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
       });
+      
+      if (!response.ok) {
+        throw new Error("Logout failed");
+      }
+      
+      return response.json();
     },
     onSuccess: () => {
       toast({
@@ -92,7 +101,7 @@ export default function AppHeader() {
                   <div className="w-6 h-6 bg-gradient-to-br from-primary to-accent rounded-lg flex items-center justify-center">
                     <User className="h-3 w-3 text-primary-foreground" />
                   </div>
-                  <span className="text-sm">{user?.firstName || user?.email || "User"}</span>
+                  <span className="text-sm">{(user as any)?.firstName || (user as any)?.email || "User"}</span>
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
