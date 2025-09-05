@@ -87,6 +87,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const attemptData = insertPracticeAttemptSchema.parse(req.body);
       const attempt = await storage.createPracticeAttempt(attemptData);
       
+      // Get the word to determine its unit
+      const word = await storage.getWord(attemptData.wordId);
+      if (word) {
+        // Update user progress for this unit
+        const existingProgress = await storage.getUserProgress(word.unitId);
+        const progressUpdate = {
+          unitId: word.unitId,
+          userId: attemptData.userId,
+          totalAttempts: (existingProgress?.totalAttempts || 0) + 1,
+          correctAttempts: (existingProgress?.correctAttempts || 0) + (attemptData.isCorrect ? 1 : 0),
+          completedWords: existingProgress?.completedWords || 0,
+          lastPracticedAt: new Date()
+        };
+
+        // If this is a correct attempt, check if it's the first time completing this word
+        if (attemptData.isCorrect) {
+          const wordAttempts = await storage.getPracticeAttempts(attemptData.wordId, attemptData.userId);
+          const previousCorrectAttempts = wordAttempts.filter(a => a.isCorrect && a.id !== attempt.id);
+          
+          // If this is the first correct attempt for this word, increment completed words
+          if (previousCorrectAttempts.length === 0) {
+            progressUpdate.completedWords = (existingProgress?.completedWords || 0) + 1;
+          }
+        }
+
+        await storage.updateUserProgress(progressUpdate);
+      }
+      
       // If incorrect, add to error words
       if (!attemptData.isCorrect) {
         await storage.createOrUpdateErrorWord({
@@ -105,6 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: "Invalid attempt data", details: error.errors });
       }
+      console.error('Practice attempt submission error:', error);
       res.status(500).json({ error: "Failed to submit practice attempt" });
     }
   });
