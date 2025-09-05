@@ -1,4 +1,4 @@
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import type { Unit, UserProgress } from "@shared/schema";
 
@@ -8,6 +8,8 @@ interface UnitSelectionProps {
 }
 
 export function UnitSelection({ units, progress }: UnitSelectionProps) {
+  const [, setLocation] = useLocation();
+  
   const getUnitProgress = (unitId: string) => {
     return progress.find(p => p.unitId === unitId);
   };
@@ -89,7 +91,7 @@ export function UnitSelection({ units, progress }: UnitSelectionProps) {
                     className="flex-1" 
                     onClick={(e) => {
                       e.preventDefault();
-                      window.location.href = `/practice/${unit.id}`;
+                      setLocation(`/practice/${unit.id}`);
                     }}
                     data-testid={`button-practice-unit-${unit.number}`}
                   >
@@ -101,7 +103,7 @@ export function UnitSelection({ units, progress }: UnitSelectionProps) {
                     className="flex-1" 
                     onClick={(e) => {
                       e.preventDefault(); 
-                      window.location.href = `/test-papers/${unit.id}`;
+                      setLocation(`/test-papers/${unit.id}`);
                     }}
                     data-testid={`button-test-papers-unit-${unit.number}`}
                   >
