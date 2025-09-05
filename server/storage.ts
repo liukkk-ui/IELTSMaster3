@@ -1,6 +1,7 @@
 import { 
   type Unit, 
   type Word, 
+  type User,
   type UserProgress, 
   type PracticeAttempt, 
   type ErrorWord,
@@ -8,6 +9,7 @@ import {
   type TestPaper,
   type InsertUnit,
   type InsertWord,
+  type UpsertUser,
   type InsertUserProgress,
   type InsertPracticeAttempt,
   type InsertErrorWord,
@@ -23,6 +25,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 export interface IStorage {
+  // Users (required for authentication)
+  getUser(id: string): Promise<User | undefined>;
+  upsertUser(user: UpsertUser): Promise<User>;
+  
   // Units
   getUnits(): Promise<Unit[]>;
   getUnit(id: string): Promise<Unit | undefined>;
@@ -61,6 +67,7 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  private users: Map<string, User> = new Map();
   private units: Map<string, Unit> = new Map();
   private words: Map<string, Word> = new Map();
   private userProgress: Map<string, UserProgress> = new Map();
@@ -71,6 +78,38 @@ export class MemStorage implements IStorage {
 
   constructor() {
     this.initializeData();
+  }
+
+  // User methods (required for authentication)
+  async getUser(id: string): Promise<User | undefined> {
+    return this.users.get(id);
+  }
+
+  async upsertUser(userData: UpsertUser): Promise<User> {
+    const existingUser = this.users.get(userData.id!);
+    const now = new Date();
+    
+    let user: User;
+    if (existingUser) {
+      user = {
+        ...existingUser,
+        ...userData,
+        updatedAt: now,
+      };
+    } else {
+      user = {
+        id: userData.id || randomUUID(),
+        email: userData.email || null,
+        firstName: userData.firstName || null,
+        lastName: userData.lastName || null,
+        profileImageUrl: userData.profileImageUrl || null,
+        createdAt: now,
+        updatedAt: now,
+      };
+    }
+    
+    this.users.set(user.id, user);
+    return user;
   }
 
   private initializeData() {
