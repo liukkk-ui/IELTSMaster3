@@ -60,7 +60,7 @@ export function UnitSelection({ units, progress }: UnitSelectionProps) {
               >
                 <div className="flex items-center justify-between mb-3">
                   <div className="flex items-center space-x-3">
-                    <div className={`w-10 h-10 ${getDifficultyColor(unit.difficulty)} rounded-lg flex items-center justify-center`}>
+                    <div className="w-10 h-10 rounded-lg flex items-center justify-center bg-[#82a6c9]">
                       <span className="text-white font-semibold text-sm">
                         {unit.number}
                       </span>
@@ -83,7 +83,6 @@ export function UnitSelection({ units, progress }: UnitSelectionProps) {
                     {accuracy > 0 ? `${accuracy}% accuracy` : 'Not started'}
                   </span>
                 </div>
-                
                 <div className="flex gap-2 mt-3 pt-3 border-t border-border">
                   <Button 
                     size="sm" 
