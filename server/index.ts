@@ -2,10 +2,10 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import session from "express-session";
-import pgSession from "connect-pg-simple";
+import connectPgSimple from "connect-pg-simple";
 
 const app = express();
-const pgSession = pgSession(session);
+const pgSession = connectPgSimple(session);
 
 const pgPool = {
   connectionString: process.env.DATABASE_URL,
