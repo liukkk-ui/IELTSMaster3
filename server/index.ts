@@ -1,8 +1,40 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import session from "express-session";
+import pgSession from "connect-pg-simple";
 
 const app = express();
+const pgSession = pgSession(session);
+
+const pgPool = {
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false 
+  }
+};
+
+app.use(session({
+  store: new PgSession({
+    pool: pgPool,
+    tableName: 'sessions',
+    createTableIfMissing: true
+  }),
+  secret: process.env.SESSION_SECRET,
+  resave: false,
+  saveUninitialized: false,
+  cookie: { maxAge: 24*60*60*1000 }
+}));
+
+app.get("/", (req, res) => {
+  if (!req.session.views) req.session.views = 1;
+  else req.session.views++;
+  res.send(`Views: ${req.session.views}`);
+});
+
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
