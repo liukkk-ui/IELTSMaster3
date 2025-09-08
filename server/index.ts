@@ -3,44 +3,44 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
-import pkg from "pg";
-
-const { Pool } = pkg;
 
 const app = express();
-
-// === PostgreSQL 连接池 ===
-const pgPool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: { rejectUnauthorized: false }
-});
-
-// === 连接 pg-simple 会话存储 ===
 const PgSession = connectPgSimple(session);
 
-app.use(session({
-  store: new PgSession({
-    pool: pgPool,
-    tableName: "sessions",
-    createTableIfMissing: true
-  }),
-  secret: process.env.SESSION_SECRET || "dev-secret", // Railway 需要配置 SESSION_SECRET
-  resave: false,
-  saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 } // 1天
-}));
+const pgPool = {
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+};
 
-// === 测试 Session 路由 ===
-app.get("/", (req, res) => {
+app.use(
+  session({
+    store: new PgSession({
+      pool: pgPool,
+      tableName: "sessions",
+      createTableIfMissing: true,
+    }),
+    secret: process.env.SESSION_SECRET || "default-secret",
+    resave: false,
+    saveUninitialized: false,
+    cookie: { maxAge: 24 * 60 * 60 * 1000 },
+  })
+);
+
+// ✅ 测试 session 的路由移到 /test，不再覆盖首页
+app.get("/test", (req, res) => {
   if (!req.session.views) req.session.views = 1;
   else req.session.views++;
   res.send(`Views: ${req.session.views}`);
 });
 
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
-// === 请求日志中间件 ===
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
@@ -59,7 +59,9 @@ app.use((req, res, next) => {
       if (capturedJsonResponse) {
         logLine += ` :: ${JSON.stringify(capturedJsonResponse)}`;
       }
-      if (logLine.length > 80) logLine = logLine.slice(0, 79) + "…";
+      if (logLine.length > 80) {
+        logLine = logLine.slice(0, 79) + "…";
+      }
       log(logLine);
     }
   });
@@ -77,15 +79,23 @@ app.use((req, res, next) => {
     throw err;
   });
 
+  // ✅ 开发用 Vite，生产用静态资源
   if (app.get("env") === "development") {
     await setupVite(app, server);
   } else {
     serveStatic(app);
   }
 
+  // ✅ Railway 要用 PORT 环境变量
   const port = parseInt(process.env.PORT || "5000", 10);
   server.listen(
-    { port, host: "0.0.0.0", reusePort: true },
-    () => log(`serving on port ${port}`)
+    {
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    },
+    () => {
+      log(`serving on port ${port}`);
+    }
   );
 })();
