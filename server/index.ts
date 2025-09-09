@@ -3,9 +3,9 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
-import pgk from "pg";
+import pg from "pg";
 
-const { pool } = pgk;
+const { Pool } = pg;
 const app = express();
 const PgSession = connectPgSimple(session);
 
