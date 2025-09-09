@@ -3,16 +3,18 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import session from "express-session";
 import connectPgSimple from "connect-pg-simple";
+import pkg from "pg";
 
+const { pool } = pgk;
 const app = express();
 const PgSession = connectPgSimple(session);
 
-const pgPool = {
+const pgPool = new Pool({
   connectionString: process.env.DATABASE_URL,
   ssl: {
     rejectUnauthorized: false,
   },
-};
+});
 
 app.use(
   session({
