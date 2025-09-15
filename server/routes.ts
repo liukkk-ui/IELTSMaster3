@@ -357,7 +357,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { wordsPerPaper, useExcelStructure } = req.body;
       
       let testPapers;
-      if (useExcelStructure !== false) {
+      if (useExcelStructure !== true) {
         // Use predefined Excel structure by default
         testPapers = await storage.generatePredefinedTestPapersForUnit(unitId);
       } else {
